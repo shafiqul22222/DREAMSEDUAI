@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Answer AI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            height: 90vh;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .persona-container {
+            width: 40%;
+            padding: 25px;
+            background-color: #f8f9fa;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .persona-container h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+            background-color: #fff;
+            color: #333;
+        }
+        
+        .input-group select:disabled, .input-group input:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        #savePersona {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        #savePersona:hover {
+            background-color: #0056b3;
+        }
+
+        .chat-container {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+        }
+
+        .chat-header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-header h2 { margin: 0; }
+
+        #clearChatButton {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            line-height: 1.4;
+            max-width: 80%;
+            position: relative;
+        }
+
+        .user-message {
+            background-color: #0084ff;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message {
+            background-color: #e4e6eb;
+            color: #050505;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+            cursor: pointer;
+        }
+
+        .humanize-button {
+            display: block;
+            margin-top: 5px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            align-self: flex-end;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            align-items: center;
+        }
+
+        #userInput {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #sendButton, #galleryButton {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #imageUpload { display: none; }
+        .disabled { opacity: 0.5; pointer-events: none; }
+    </style>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+</head>
+<body>
+
+    <div class="container">
+        <div class="persona-container">
+            <h2>Dreams Academy Survey AI</h2>
+            
+            <div class="input-group">
+                <label for="personaName">Name:</label>
+                <input type="text" id="personaName" placeholder="Your Full Name">
+            </div>
+            
+            <div class="input-group">
+                <label for="personaDob">Date of Birth:</label>
+                <input type="date" id="personaDob">
+            </div>
+            
+            <!-- Location Selection -->
+            <div class="input-group">
+                <label for="personaCountry">Country:</label>
+                <select id="personaCountry">
+                    <option value="" selected disabled>Select Country</option>
+                    <option value="United States">United States</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Bangladesh">Bangladesh</option>
+                    <option value="India">India</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="personaState">State/Province:</label>
+                <select id="personaState" disabled>
+                    <option value="">Select Country First</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="personaCounty">County (Manual Input):</label>
+                <input type="text" id="personaCounty" placeholder="Select State First" disabled>
+            </div>
+
+            <div class="input-group">
+                <label for="personaCity">City:</label>
+                <select id="personaCity" disabled>
+                    <option value="">Select State First</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="personaZip">Zip Code:</label>
+                <input type="text" id="personaZip" placeholder="Select City First" disabled>
+            </div>
+
+            <div class="input-group">
+                <label for="personaJob">Job Title:</label>
+                <input type="text" id="personaJob" placeholder="e.g. VP of IT">
+            </div>
+
+            <div class="input-group">
+                <label for="personaDetails">Generated Persona:</label>
+                <textarea id="personaDetails" rows="4" placeholder="Persona prompt will appear here..."></textarea>
+            </div>
+            
+            <button id="savePersona">Save and Start Survey</button>
+        </div>
+
+        <div class="chat-container disabled" id="chatContainer">
+            <div class="chat-header">
+                <h2>Survey Answer AI</h2>
+                <button id="clearChatButton">Clear Chat</button>
+            </div>
+            <div class="chat-box" id="chatBox">
+                <div class="message bot-message">
+                    ডেমো পরিচয় তৈরি করে Save করুন চ্যাট শুরু করতে।
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Type your message..." disabled>
+                <input type="file" id="imageUpload" accept="image/*">
+                <label for="imageUpload" id="galleryButton">📷</label>
+                <button id="sendButton" disabled>→</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM ELEMENTS ---
+            const countrySelect = document.getElementById('personaCountry');
+            const stateSelect = document.getElementById('personaState');
+            const countyInput = document.getElementById('personaCounty');
+            const citySelect = document.getElementById('personaCity');
+            const zipInput = document.getElementById('personaZip');
+            const saveButton = document.getElementById('savePersona');
+            const chatContainer = document.getElementById('chatContainer');
+            const chatBox = document.getElementById('chatBox');
+            const userInput = document.getElementById('userInput');
+            const sendButton = document.getElementById('sendButton');
+            const imageUpload = document.getElementById('imageUpload');
+            
+            // --- API KEY ---
+            const GEMINI_API_KEY = "AIzaSyDXaRQX_roe1YR1cEyI6p8IjTdzoj-pCh4";
+            const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+            
+            let persona = {};
+
+            // --- STATIC LOCATION DATA (API Replacement) ---
+            // এই ডাটাবেসের কারণে ইন্টারনেট ছাড়াই ড্রপডাউন কাজ করবে
+            const locationData = {
+                "United States": {
+                    "California": ["Los Angeles", "San Diego", "San Jose", "San Francisco", "Fresno"],
+                    "New York": ["New York City", "Buffalo", "Rochester", "Yonkers", "Syracuse"],
+                    "Texas": ["Houston", "San Antonio", "Dallas", "Austin", "Fort Worth"],
+                    "Florida": ["Jacksonville", "Miami", "Tampa", "Orlando", "St. Petersburg"],
+                    "Illinois": ["Chicago", "Aurora", "Naperville", "Joliet", "Rockford"]
+                },
+                "United Kingdom": {
+                    "England": ["London", "Manchester", "Birmingham", "Liverpool", "Leeds"],
+                    "Scotland": ["Edinburgh", "Glasgow", "Aberdeen", "Dundee"],
+                    "Wales": ["Cardiff", "Swansea", "Newport"]
+                },
+                "Canada": {
+                    "Ontario": ["Toronto", "Ottawa", "Mississauga", "Brampton"],
+                    "Quebec": ["Montreal", "Quebec City", "Laval"],
+                    "British Columbia": ["Vancouver", "Surrey", "Burnaby"]
+                },
+                "Australia": {
+                    "New South Wales": ["Sydney", "Newcastle", "Wollongong"],
+                    "Victoria": ["Melbourne", "Geelong", "Ballarat"],
+                    "Queensland": ["Brisbane", "Gold Coast", "Sunshine Coast"]
+                },
+                "Bangladesh": {
+                    "Dhaka Division": ["Dhaka", "Gazipur", "Narayanganj", "Tangail"],
+                    "Chittagong Division": ["Chittagong", "Comilla", "Cox's Bazar", "Feni"],
+                    "Sylhet Division": ["Sylhet", "Habiganj", "Moulvibazar"],
+                    "Khulna Division": ["Khulna", "Jessore", "Kushtia"]
+                },
+                "India": {
+                    "Maharashtra": ["Mumbai", "Pune", "Nagpur"],
+                    "Delhi": ["New Delhi"],
+                    "Karnataka": ["Bangalore", "Mysore"],
+                    "West Bengal": ["Kolkata", "Howrah", "Darjeeling"]
+                }
+            };
+
+            // --- LOGIC: Country -> State ---
+            countrySelect.addEventListener('change', () => {
+                const selectedCountry = countrySelect.value;
+                const states = locationData[selectedCountry];
+
+                // Reset Fields
+                stateSelect.innerHTML = '<option value="" selected disabled>Select State</option>';
+                citySelect.innerHTML = '<option value="" selected disabled>Select State First</option>';
+                citySelect.disabled = true;
+                countyInput.value = '';
+                countyInput.disabled = true;
+                zipInput.value = '';
+                zipInput.disabled = true;
+
+                if (states) {
+                    stateSelect.disabled = false;
+                    for (let state in states) {
+                        const option = document.createElement('option');
+                        option.value = state;
+                        option.textContent = state;
+                        stateSelect.appendChild(option);
+                    }
+                } else {
+                    stateSelect.innerHTML = '<option>No Data Available</option>';
+                }
+            });
+
+            // --- LOGIC: State -> City ---
+            stateSelect.addEventListener('change', () => {
+                const selectedCountry = countrySelect.value;
+                const selectedState = stateSelect.value;
+                const cities = locationData[selectedCountry][selectedState];
+
+                // Enable County
+                countyInput.disabled = false;
+                countyInput.placeholder = "Enter County Name";
+
+                // Setup Cities
+                citySelect.innerHTML = '<option value="" selected disabled>Select City</option>';
+                zipInput.value = '';
+                zipInput.disabled = true;
+
+                if (cities) {
+                    citySelect.disabled = false;
+                    cities.forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = city;
+                        option.textContent = city;
+                        citySelect.appendChild(option);
+                    });
+                }
+            });
+
+            // --- LOGIC: City -> Zip ---
+            citySelect.addEventListener('change', () => {
+                zipInput.disabled = false;
+                zipInput.placeholder = "Enter Zip Code";
+            });
+
+
+            // --- SAVE & GENERATE ---
+            saveButton.addEventListener('click', () => {
+                const pName = document.getElementById('personaName').value.trim();
+                const pDobValue = document.getElementById('personaDob').value;
+                const pCountry = countrySelect.value;
+                const pState = stateSelect.value;
+                const pCity = citySelect.value;
+                const pCounty = countyInput.value.trim();
+                const pZip = zipInput.value.trim();
+                const pJob = document.getElementById('personaJob').value.trim();
+
+                if (!pName) { alert('Please Enter Name'); return; }
+
+                let formattedDob = 'January 01, 1980';
+                if (pDobValue) {
+                    const d = new Date(pDobValue);
+                    formattedDob = d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+                }
+
+                // Default Values
+                const dJob = pJob || 'Private Job Holder';
+                const dCity = (pCity && pCity !== "") ? pCity : 'Unknown City';
+                const dState = (pState && pState !== "") ? pState : 'Unknown State';
+                const dCounty = pCounty || 'Unknown County';
+                const dZip = pZip || '00000';
+                const dCountry = pCountry || 'United States';
+
+                const fullPersonaText = `Suppose,
+You are a private job holder in the Information Technology field, currently working as the ${dJob}. You live in a household of 3 people, including your wife and one child. You are a citizen of ${dCountry}, living in ${dCity}, ZIP code ${dZip}
+
+Here’s your personal and household profile for survey purposes:
+
+Full Name: ${pName}
+Date of Birth: ${formattedDob}
+City/County/State: ${dCity}/${dCounty}/${dState}
+Country: ${dCountry}
+Job Role: ${dJob}
+Home: Own a single-family home
+Marital Status: Married
+Income: $80,000 - $120,000
+
+Instructions for Survey Response:
+You will now answer survey questions as this person (yourself). All answers should be:
+Realistic and authentic
+Based on the info above
+In casual, local English
+Short and to-the-point (1–3 lines max)`.trim();
+
+                document.getElementById('personaDetails').value = fullPersonaText;
+                persona = { name: pName, details: fullPersonaText };
+                
+                chatContainer.classList.remove('disabled');
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                chatBox.innerHTML = '';
+                appendMessage(`Awesome! I'm now responding as ${persona.name} from ${dCity}. Ready for survey questions!`, 'bot-message');
+            });
+
+            // --- CHAT LOGIC ---
+            function sendMessage() {
+                const text = userInput.value.trim();
+                if (!text) return;
+                appendMessage(text, 'user-message');
+                userInput.value = '';
+                appendMessage('Writing...', 'bot-message', 'loading');
+                getBotResponse(text);
+            }
+
+            function appendMessage(text, ...classes) {
+                const div = document.createElement('div');
+                div.classList.add('message', ...classes);
+                
+                const content = document.createElement('div');
+                content.innerText = text;
+                div.appendChild(content);
+
+                if (classes.includes('bot-message') && !classes.includes('loading') && text !== 'Writing...') {
+                    const btn = document.createElement('button');
+                    btn.innerText = 'Humanize';
+                    btn.classList.add('humanize-button');
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        humanizeText(content, btn);
+                    };
+                    div.appendChild(btn);
+                    
+                    div.addEventListener('click', (e) => {
+                        if (e.target !== btn) {
+                            navigator.clipboard.writeText(content.innerText);
+                            showCopiedFeedback(div);
+                        }
+                    });
+                }
+
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight;
+                
+                if (!classes.includes('loading')) {
+                    const loader = chatBox.querySelector('.loading');
+                    if (loader) loader.remove();
+                }
+            }
+
+            function showCopiedFeedback(element) {
+                const originalBg = element.style.backgroundColor;
+                element.style.backgroundColor = '#d1e7dd';
+                setTimeout(() => {
+                    element.style.backgroundColor = originalBg;
+                }, 300);
+            }
+
+            async function getBotResponse(userText) {
+                const instructions = `You are an AI assistant impersonating a human. 
+                Persona: ${persona.details}
+                Answer the user's question directly, concisely (1-3 sentences), and naturally. No AI filler.`;
+
+                try {
+                    const response = await fetch(GEMINI_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [
+                                { "role": "user", "parts": [{ "text": instructions }] },
+                                { "role": "model", "parts": [{ "text": "Understood." }] },
+                                { "role": "user", "parts": [{ "text": userText }] }
+                            ]
+                        })
+                    });
+                    const data = await response.json();
+                    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Error generating response.";
+                    appendMessage(reply, 'bot-message');
+                } catch (err) {
+                    appendMessage("Connection Error: " + err.message, 'bot-message');
+                }
+            }
+
+            async function humanizeText(element, btn) {
+                btn.innerText = '...';
+                const prompt = `Rewrite this to sound 100% human, casual, and high burstiness: "${element.innerText}"`;
+                try {
+                    const response = await fetch(GEMINI_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        element.innerText = text.trim();
+                        btn.innerText = 'Done';
+                    }
+                } catch (e) { btn.innerText = 'Error'; }
+            }
+
+            // Event Listeners
+            sendButton.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+            document.getElementById('clearChatButton').addEventListener('click', () => {
+                chatBox.innerHTML = '<div class="message bot-message">Chat Cleared.</div>';
+            });
+            
+            imageUpload.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                appendMessage('Scanning image...', 'bot-message');
+                const worker = await Tesseract.createWorker('eng');
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
+                if (text.trim()) {
+                    userInput.value = text.trim();
+                    sendMessage();
+                } else {
+                    appendMessage('No text found.', 'bot-message');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
