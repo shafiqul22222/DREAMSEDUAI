@@ -213,7 +213,7 @@
                 <input type="date" id="personaDob">
             </div>
             
-            <!-- Location Selection -->
+            <!-- Location Order: Country -> State -> County -> City -> Zip -->
             <div class="input-group">
                 <label for="personaCountry">Country:</label>
                 <select id="personaCountry">
@@ -236,7 +236,7 @@
 
             <div class="input-group">
                 <label for="personaCounty">County (Manual Input):</label>
-                <input type="text" id="personaCounty" placeholder="Select State First" disabled>
+                <input type="text" id="personaCounty" placeholder="Enter County (e.g. Los Angeles)" disabled>
             </div>
 
             <div class="input-group">
@@ -248,7 +248,7 @@
 
             <div class="input-group">
                 <label for="personaZip">Zip Code:</label>
-                <input type="text" id="personaZip" placeholder="Select City First" disabled>
+                <input type="text" id="personaZip" placeholder="Enter Zip Code" disabled>
             </div>
 
             <div class="input-group">
@@ -285,123 +285,125 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM ELEMENTS ---
             const countrySelect = document.getElementById('personaCountry');
             const stateSelect = document.getElementById('personaState');
             const countyInput = document.getElementById('personaCounty');
             const citySelect = document.getElementById('personaCity');
             const zipInput = document.getElementById('personaZip');
             const saveButton = document.getElementById('savePersona');
+            
             const chatContainer = document.getElementById('chatContainer');
             const chatBox = document.getElementById('chatBox');
             const userInput = document.getElementById('userInput');
             const sendButton = document.getElementById('sendButton');
             const imageUpload = document.getElementById('imageUpload');
             
-            // --- API KEY ---
+            // আপনার API Key (নোট: এই কী পাবলিক কোডে রাখা নিরাপদ নয়)
             const GEMINI_API_KEY = "AIzaSyDXaRQX_roe1YR1cEyI6p8IjTdzoj-pCh4";
             const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
             
             let persona = {};
 
-            // --- STATIC LOCATION DATA (API Replacement) ---
-            // এই ডাটাবেসের কারণে ইন্টারনেট ছাড়াই ড্রপডাউন কাজ করবে
-            const locationData = {
-                "United States": {
-                    "California": ["Los Angeles", "San Diego", "San Jose", "San Francisco", "Fresno"],
-                    "New York": ["New York City", "Buffalo", "Rochester", "Yonkers", "Syracuse"],
-                    "Texas": ["Houston", "San Antonio", "Dallas", "Austin", "Fort Worth"],
-                    "Florida": ["Jacksonville", "Miami", "Tampa", "Orlando", "St. Petersburg"],
-                    "Illinois": ["Chicago", "Aurora", "Naperville", "Joliet", "Rockford"]
-                },
-                "United Kingdom": {
-                    "England": ["London", "Manchester", "Birmingham", "Liverpool", "Leeds"],
-                    "Scotland": ["Edinburgh", "Glasgow", "Aberdeen", "Dundee"],
-                    "Wales": ["Cardiff", "Swansea", "Newport"]
-                },
-                "Canada": {
-                    "Ontario": ["Toronto", "Ottawa", "Mississauga", "Brampton"],
-                    "Quebec": ["Montreal", "Quebec City", "Laval"],
-                    "British Columbia": ["Vancouver", "Surrey", "Burnaby"]
-                },
-                "Australia": {
-                    "New South Wales": ["Sydney", "Newcastle", "Wollongong"],
-                    "Victoria": ["Melbourne", "Geelong", "Ballarat"],
-                    "Queensland": ["Brisbane", "Gold Coast", "Sunshine Coast"]
-                },
-                "Bangladesh": {
-                    "Dhaka Division": ["Dhaka", "Gazipur", "Narayanganj", "Tangail"],
-                    "Chittagong Division": ["Chittagong", "Comilla", "Cox's Bazar", "Feni"],
-                    "Sylhet Division": ["Sylhet", "Habiganj", "Moulvibazar"],
-                    "Khulna Division": ["Khulna", "Jessore", "Kushtia"]
-                },
-                "India": {
-                    "Maharashtra": ["Mumbai", "Pune", "Nagpur"],
-                    "Delhi": ["New Delhi"],
-                    "Karnataka": ["Bangalore", "Mysore"],
-                    "West Bengal": ["Kolkata", "Howrah", "Darjeeling"]
-                }
-            };
-
-            // --- LOGIC: Country -> State ---
-            countrySelect.addEventListener('change', () => {
+            // --- LOCATION LOGIC (UPDATED) ---
+            
+            // 1. Country Change -> Reset Everything & Fetch States
+            countrySelect.addEventListener('change', async () => {
                 const selectedCountry = countrySelect.value;
-                const states = locationData[selectedCountry];
-
-                // Reset Fields
-                stateSelect.innerHTML = '<option value="" selected disabled>Select State</option>';
-                citySelect.innerHTML = '<option value="" selected disabled>Select State First</option>';
-                citySelect.disabled = true;
+                
+                // Reset downstream fields
+                stateSelect.innerHTML = '<option>Loading...</option>';
+                stateSelect.disabled = true;
+                
                 countyInput.value = '';
                 countyInput.disabled = true;
+                
+                citySelect.innerHTML = '<option>Select State First</option>';
+                citySelect.disabled = true;
+                
                 zipInput.value = '';
                 zipInput.disabled = true;
 
-                if (states) {
-                    stateSelect.disabled = false;
-                    for (let state in states) {
-                        const option = document.createElement('option');
-                        option.value = state;
-                        option.textContent = state;
-                        stateSelect.appendChild(option);
+                try {
+                    // Fetch States based on Country
+                    const response = await fetch('https://countriesnow.space/api/v0.1/countries/states', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ "country": selectedCountry })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.error || !data.data.states || data.data.states.length === 0) {
+                         stateSelect.innerHTML = '<option value="">No States Found</option>';
+                         // যদি স্টেট না পাওয়া যায়, ম্যানুয়ালি লেখার ব্যবস্থা করা যেতে পারে, কিন্তু API এর সীমাবদ্ধতার কারণে এখানে বন্ধ রাখা হলো।
+                         return;
                     }
-                } else {
-                    stateSelect.innerHTML = '<option>No Data Available</option>';
+
+                    stateSelect.innerHTML = '<option value="" selected disabled>Select State</option>';
+                    data.data.states.forEach(state => {
+                        const option = document.createElement('option');
+                        option.value = state.name;
+                        option.textContent = state.name;
+                        stateSelect.appendChild(option);
+                    });
+                    stateSelect.disabled = false;
+
+                } catch (error) {
+                    console.error("State API Error:", error);
+                    stateSelect.innerHTML = '<option>Error Loading States</option>';
                 }
             });
 
-            // --- LOGIC: State -> City ---
-            stateSelect.addEventListener('change', () => {
+            // 2. State Change -> Fetch Cities & Enable County Input
+            stateSelect.addEventListener('change', async () => {
                 const selectedCountry = countrySelect.value;
                 const selectedState = stateSelect.value;
-                const cities = locationData[selectedCountry][selectedState];
 
-                // Enable County
+                // Reset downstream fields
+                citySelect.innerHTML = '<option>Loading...</option>';
+                citySelect.disabled = true;
+                
+                // Enable County (Manual Input)
                 countyInput.disabled = false;
                 countyInput.placeholder = "Enter County Name";
-
-                // Setup Cities
-                citySelect.innerHTML = '<option value="" selected disabled>Select City</option>';
+                
                 zipInput.value = '';
                 zipInput.disabled = true;
 
-                if (cities) {
-                    citySelect.disabled = false;
-                    cities.forEach(city => {
+                try {
+                    // Fetch Cities based on Country and State
+                    const response = await fetch('https://countriesnow.space/api/v0.1/countries/state/cities', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ "country": selectedCountry, "state": selectedState })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.error || !data.data || data.data.length === 0) {
+                        citySelect.innerHTML = '<option value="">No Cities Found</option>';
+                        // যদি সিটি না পাওয়া যায়, তখন ম্যানুয়াল ইনপুটের জন্য টেক্সট ফিল্ডে পরিবর্তন করা যেতে পারে (এই কোডে ড্রপডাউন রাখা হয়েছে)
+                        return;
+                    }
+
+                    citySelect.innerHTML = '<option value="" selected disabled>Select City</option>';
+                    data.data.forEach(city => {
                         const option = document.createElement('option');
                         option.value = city;
                         option.textContent = city;
                         citySelect.appendChild(option);
                     });
+                    citySelect.disabled = false;
+
+                } catch (error) {
+                    console.error("City API Error:", error);
+                    citySelect.innerHTML = '<option>Error Loading Cities</option>';
                 }
             });
 
-            // --- LOGIC: City -> Zip ---
+            // 3. City Change -> Enable Zip Input
             citySelect.addEventListener('change', () => {
                 zipInput.disabled = false;
                 zipInput.placeholder = "Enter Zip Code";
             });
-
 
             // --- SAVE & GENERATE ---
             saveButton.addEventListener('click', () => {
@@ -422,7 +424,7 @@
                     formattedDob = d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
                 }
 
-                // Default Values
+                // Default Values if fields are empty
                 const dJob = pJob || 'Private Job Holder';
                 const dCity = (pCity && pCity !== "") ? pCity : 'Unknown City';
                 const dState = (pState && pState !== "") ? pState : 'Unknown State';
@@ -442,7 +444,6 @@ Country: ${dCountry}
 Job Role: ${dJob}
 Home: Own a single-family home
 Marital Status: Married
-Income: $80,000 - $120,000
 
 Instructions for Survey Response:
 You will now answer survey questions as this person (yourself). All answers should be:
